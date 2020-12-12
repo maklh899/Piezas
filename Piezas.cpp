@@ -1,5 +1,7 @@
 #include "Piezas.h"
 #include <vector>
+#include <cmath>
+#include <iostream>
 /** CLASS Piezas
  * Class for representing a Piezas vertical board, which is roughly based
  * on the game "Connect Four" where pieces are placed in a column and 
@@ -22,6 +24,18 @@
 **/
 Piezas::Piezas()
 {
+    //turn starts with X
+    turn = X;
+
+    //resize the board to be 3x4
+    board.resize(BOARD_ROWS);
+    for(int i=0; i < (int)board.size(); ++i)
+        board[i].resize(BOARD_COLS);
+
+    //setting board to blank
+    for(int i=0; i<BOARD_ROWS; ++i)
+        for(int j=0; j<BOARD_COLS; ++j)
+            board[i][j] = Blank;
 }
 
 /**
@@ -30,6 +44,18 @@ Piezas::Piezas()
 **/
 void Piezas::reset()
 {
+    //turn starts with X
+    turn = X;
+
+    //resize the board to be 3x4
+    board.resize(BOARD_ROWS);
+    for(int i=0; i < (int)board.size(); ++i)
+        board[i].resize(BOARD_COLS);
+
+    //setting board to blank
+    for(int i=0; i<BOARD_ROWS; ++i)
+        for(int j=0; j<BOARD_COLS; ++j)
+            board[i][j] = Blank;
 }
 
 /**
@@ -42,7 +68,75 @@ void Piezas::reset()
 **/ 
 Piece Piezas::dropPiece(int column)
 {
-    return Blank;
+    std::cout<<"\n-----DropPiec()-----\n";
+
+    //checking for out of bounds
+    if(column >= BOARD_COLS || column < 0)
+    {
+        //person loses turn
+        if(turn == X)
+            turn = O;
+        else
+            turn = X;
+
+        std::cout<<"col out of bounds ->\tturn = "<<turn<<"\n";
+        //return Invalid
+        return Invalid;
+    }
+
+    //checking if column is full 
+    // - checks the col row if populated
+    std::cout<<"____column full___\n";
+    int full_col = 0;
+    for(int i = BOARD_ROWS-1; i >= 0; --i)
+    {   
+        std::cout<<"Top place: board["<<i<<"]["<<column<<"] = "<<board[i][column]<<std::endl;
+        if(board[i][column] == X || board[i][column] == O)
+        {
+            full_col++;
+        }
+    }
+
+    //returns blank if column is full
+    if(full_col==3)
+    {
+        //person loses turn
+        if(turn == X)
+            turn = O;
+        else
+            turn = X;
+
+        std::cout<<"\tturn = "<<turn<<"\n";
+        //return Invalid
+        return Blank;
+    }
+     std::cout<<"____column full end___\n";
+
+
+    //looking for the next empty place in the column
+    // - checks bottom to top
+    std::cout<<"____next empty space___\n";
+    for(int i = 2;i >= 0; --i)
+    {
+        if(board[i][column] == Blank)
+        {
+            //places current person's piece
+            board[i][column] = turn;
+            
+            // chenges player's turn
+            if(turn == X)
+                turn = O;
+            else
+                turn = X;
+
+            std::cout<<"____next empty space end___\n";
+            //returns what piece is placed
+            return board[i][column];
+        }
+    }
+
+    return Invalid;
+
 }
 
 /**
@@ -51,7 +145,16 @@ Piece Piezas::dropPiece(int column)
 **/
 Piece Piezas::pieceAt(int row, int column)
 {
-    return Blank;
+    // Invert row
+    row = abs(row - 2);
+
+    if ((row >= BOARD_ROWS || row < 0 ) || ( column >= BOARD_COLS || column < 0))
+    {
+        return Invalid;
+    }
+    //should return Blank or the Piece
+    return board[row][column];
+
 }
 
 /**
@@ -65,5 +168,92 @@ Piece Piezas::pieceAt(int row, int column)
 **/
 Piece Piezas::gameState()
 {
-    return Blank;
+    std::cout<<"\n-----gameState()-----\n";
+
+    // Check if board is full
+    std::cout<<"____board is full___\n";
+    bool full_board = true;
+    for(int i = 0;i < (int)board.size(); ++i)
+    {
+        for(int j = 0;j < (int)board[i].size(); ++j)
+        {
+            if(board[i][j] == Blank)
+            {
+                full_board = false;
+            }
+        }
+    }
+   
+
+    //if the board is full check for a winner
+    if(!full_board)
+    {
+        std::cout<<"____board is full end___\n";
+        return Invalid;
+    }
+        
+
+    // searches horizontally for the max streak
+    int x_max, o_max, running_total = 0;
+
+    std::cout<<"____search horizontal___\n";
+    for(int j = 0; j < 4 ; ++j)
+    {
+        for(int i = 0; i < 2; ++i)
+        {
+            // Count streaks, checks if the cur is equal to the previous
+            if(board[i][j] == board[i+1][j])
+            {
+                running_total++;
+
+                //checks the piece and if the running streak is greater
+                //that pieces max streak, assign the piece_max with the running total
+                if(board[i][j] == X && running_total > x_max) 
+                    x_max = running_total;
+                else if(board[i][j] == O && running_total > o_max) 
+                    o_max = running_total;
+            }
+            else
+            {
+                running_total = 0;
+            }
+        }
+    }
+    std::cout<<"____search horizontal end___\n";
+
+
+    std::cout<<"____search vertical___\n";
+    std::cout<<"board size: "<<board.size()<<std::endl;
+    for(int i = 0; i < (int)board.size(); ++i)
+    {
+        for(int j = 0; j < (int)board.size(); ++j)
+        {
+            // Count streaks, checks if the cur is equal to the previous
+            if(board[i][j] == board[i][j+1])
+            {
+                running_total++;
+
+                //checks the piece and if the running streak is greater
+                //that pieces max streak, assign the piece_max with the running total
+                if(board[i][j] == X && running_total > x_max) 
+                    x_max = running_total;
+                else if(board[i][j] == O && running_total > o_max) 
+                    o_max = running_total;
+            }
+            else
+            {
+                running_total = 0;
+            }
+        }
+    }
+    std::cout<<"____search vertical end___\n";
+    //retrun blank if theres a tie
+    if(x_max == o_max) 
+        return Blank;
+    else if(x_max > o_max)
+        return X;
+    else 
+        return O;
+
+    
 }
